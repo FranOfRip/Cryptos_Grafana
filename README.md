@@ -102,7 +102,7 @@ df.groupBy("par").avg("precio_actual").show()
 
 ---
 
-## 👨 Autor
+##  Autor
 
 Proyecto desarrollado por Fran.
 
