@@ -22,13 +22,13 @@ Flujo:
 
 ##  Tecnologías
 
-* Python (Producer)
-* Kafka
-* Spark Streaming
-* HDFS
-* Prometheus
-* Grafana
-* Docker
+# Python (Producer)
+# Kafka
+# Spark Streaming
+# HDFS
+# Prometheus
+# Grafana
+# Docker
 
 ---
 
