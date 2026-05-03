@@ -1,63 +1,53 @@
-# 🚀 Crypto Exchange Streaming Pipeline
+#  Crypto Exchange Streaming Pipeline
 
-Pipeline de procesamiento de datos en tiempo real para criptomonedas utilizando tecnologías de Big Data y observabilidad.
-
----
-
-## 📌 Descripción
-
-Este proyecto implementa un sistema completo de ingesta, procesamiento, almacenamiento y visualización de datos de criptomonedas en tiempo real.
-
-El flujo de datos es el siguiente:
-
-**Binance → Producer → Kafka → Spark Streaming → HDFS**
-**Métricas → Prometheus → Grafana**
+Pipeline de datos en tiempo real para criptomonedas usando tecnologías Big Data.
 
 ---
 
-## 🏗️ Arquitectura
+##  Descripción
+
+Este proyecto procesa datos en tiempo real desde Binance y los visualiza en dashboards.
+
+Flujo:
+
+**Binance → Kafka → Spark → HDFS → Grafana**
+
+---
+
+##  Arquitectura
 
 ![Arquitectura](docs/arquitectura.png)
 
 ---
 
-## ⚙️ Tecnologías utilizadas
+##  Tecnologías
 
 * Python (Producer)
-* Apache Kafka
-* Apache Spark Streaming
-* Hadoop HDFS
+* Kafka
+* Spark Streaming
+* HDFS
 * Prometheus
 * Grafana
-* Docker / Docker Compose
+* Docker
 
 ---
 
-## 📂 Estructura del proyecto
+##  Instalación y ejecución
 
-```
-crypto-exchange/
-├── producer/
-├── spark/
-├── hdfs/
-├── prometheus/
-├── grafana/
-├── hive/
-├── docker-compose.yml
-└── README.md
+### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/FranOfRip/Cryptos_Grafana.git
+cd Cryptos_Grafana
 ```
 
----
-
-## 🚀 Ejecución
-
-### Levantar el entorno
+### 2. Levantar el sistema
 
 ```bash
 docker compose up -d
 ```
 
-### Verificar contenedores
+### 3. Verificar contenedores
 
 ```bash
 docker ps
@@ -65,12 +55,16 @@ docker ps
 
 ---
 
-## 📊 Monitorización
+##  Accesos
 
 * Grafana → http://localhost:3000
 * Prometheus → http://localhost:9090
 
-Consulta de ejemplo:
+---
+
+##  Monitorización
+
+Ejemplo de consulta en Prometheus:
 
 ```promql
 rate(binance_mensajes_total[2m])
@@ -78,75 +72,38 @@ rate(binance_mensajes_total[2m])
 
 ---
 
-## 🚨 Alertas
+##  Procesamiento
 
-Se ha configurado una alerta en Grafana basada en la tasa de mensajes:
+Spark Streaming procesa los datos en tiempo real mediante ventanas y calcula:
 
-```promql
-rate(binance_mensajes_total[2m])
-```
-
-Estados:
-
-* 🔴 FIRING → alerta activa
-* 🟢 NORMAL → comportamiento normal
+* Precio medio
+* Máximo y mínimo
+* Volumen
 
 ---
 
-## ⚡ Procesamiento en Spark
+##  Almacenamiento
 
-El sistema realiza:
-
-* Ventanas de tiempo
-* Cálculo de métricas:
-
-  * precio medio
-  * máximo y mínimo
-  * volumen
-* Detección de eventos
-
----
-
-## 💾 Almacenamiento en HDFS
-
-Datos almacenados en formato Parquet:
+Datos en HDFS en formato Parquet:
 
 ```
 /data/crypto/par=BTCUSDT/fecha=YYYY-MM-DD
 ```
 
-Particionado por:
-
-* par
-* fecha
-
 ---
 
-## 📈 Consulta histórica
+##  Consulta de datos
 
-Ejemplo en Spark:
+Ejemplo:
 
 ```python
-df = spark.read.parquet("hdfs://namenode:9000/data/crypto")
 df.groupBy("par").avg("precio_actual").show()
 ```
 
 ---
 
-## ⚠️ Limitaciones
+## 👨 Autor
 
-* Entorno local
-* Escalabilidad limitada
-* Sin integración completa con Hive
+Proyecto desarrollado por Fran.
 
 ---
-
-## 🚀 Posibles mejoras
-
-* Integración con Hive / Presto
-* Alertas con notificaciones (email, Slack)
-* Escalado distribuido
-
----
-
-
