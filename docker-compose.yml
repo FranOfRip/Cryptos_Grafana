@@ -7,11 +7,18 @@ services:
       - "2181:2181"
     networks:
       - crypto_net
-
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+ 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - "9092:9092"
     environment:
@@ -23,7 +30,14 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
       - crypto_net
-
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:29092"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: on-failure
+ 
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
@@ -38,12 +52,19 @@ services:
       - hadoop_namenode:/hadoop/dfs/name
     networks:
       - crypto_net
-
+    healthcheck:
+      test: ["CMD", "hdfs", "dfsadmin", "-safemode", "get"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+ 
   datanode:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode
     depends_on:
-      - namenode
+      namenode:
+        condition: service_healthy
     ports:
       - "9864:9864"
     environment:
@@ -54,29 +75,35 @@ services:
       - hadoop_datanode:/hadoop/dfs/data
     networks:
       - crypto_net
-
+ 
   producer:
     build: ./producer
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks:
       - crypto_net
-
+    restart: on-failure
+ 
   spark:
     build: ./spark
     depends_on:
-      - kafka
-      - namenode
-      - datanode
+      kafka:
+        condition: service_healthy
+      namenode:
+        condition: service_healthy
+      datanode:
+        condition: service_started
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks:
       - crypto_net
-
+    restart: on-failure
+ 
   prometheus:
     image: prom/prometheus
     ports:
@@ -85,21 +112,21 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - crypto_net
-
+ 
   grafana:
     image: grafana/grafana
     ports:
       - "3000:3000"
     networks:
       - crypto_net
-
+ 
   node-exporter:
     image: prom/node-exporter
     ports:
       - "9100:9100"
     networks:
       - crypto_net
-
+ 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     ports:
@@ -111,11 +138,11 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     networks:
       - crypto_net
-
+ 
 volumes:
   hadoop_namenode:
   hadoop_datanode:
-
+ 
 networks:
   crypto_net:
     name: crypto_net

@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "afkol5mrd6j9ca"
+        "uid": "afo1jk0lj0ef4e"
       },
       "fieldConfig": {
         "defaults": {
@@ -93,7 +93,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "afkol5mrd6j9ca"
+        "uid": "afo1jk0lj0ef4e"
       },
       "fieldConfig": {
         "defaults": {
@@ -145,8 +145,13 @@
       "pluginVersion": "12.4.1",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "afo1jk0lj0ef4e"
+          },
           "editorMode": "code",
           "expr": "crypto_precio_actual{par=\"ETHUSDT\"}",
+          "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -158,7 +163,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "afkol5mrd6j9ca"
+        "uid": "afo1jk0lj0ef4e"
       },
       "fieldConfig": {
         "defaults": {
@@ -252,7 +257,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "afkol5mrd6j9ca"
+        "uid": "afo1jk0lj0ef4e"
       },
       "fieldConfig": {
         "defaults": {
@@ -346,7 +351,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "afkol5mrd6j9ca"
+        "uid": "afo1jk0lj0ef4e"
       },
       "fieldConfig": {
         "defaults": {
@@ -452,6 +457,6 @@
   "timezone": "browser",
   "title": "Cryptos",
   "uid": "addtz8p",
-  "version": 4,
+  "version": 5,
   "weekStart": ""
 }
