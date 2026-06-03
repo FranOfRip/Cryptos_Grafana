@@ -22,11 +22,20 @@ STREAMS = [
 BINANCE_WS_URL = "wss://stream.binance.com:9443/stream?streams=" + "/".join(STREAMS)
 
 
-producer = KafkaProducer(
-    bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-    value_serializer=lambda value: json.dumps(value).encode("utf-8"),
-    key_serializer=lambda key: key.encode("utf-8") if key else None,
-)
+def crear_producer(bootstrap_servers, retries=15, delay=5):
+    for i in range(retries):
+        try:
+            p = KafkaProducer(
+                bootstrap_servers=bootstrap_servers,
+                value_serializer=lambda value: json.dumps(value).encode("utf-8"),
+                key_serializer=lambda key: key.encode("utf-8") if key else None,
+            )
+            print("Conectado a Kafka correctamente")
+            return p
+        except Exception as e:
+            print(f"Intento {i + 1}/{retries} - Kafka no disponible: {e}")
+            time.sleep(delay)
+    raise Exception("No se pudo conectar a Kafka tras varios intentos")
 
 
 mensajes_binance = Counter(
@@ -49,9 +58,6 @@ precio_actual = Gauge(
 
 
 def normalizar_miniticker(payload):
-    """
-    Convierte el mensaje miniTicker de Binance a un formato más limpio.
-    """
     return {
         "tipo": "miniTicker",
         "event_time": payload.get("E"),
@@ -67,11 +73,7 @@ def normalizar_miniticker(payload):
 
 
 def normalizar_kline(payload):
-    """
-    Convierte el mensaje kline_1m de Binance a un formato más limpio.
-    """
     kline = payload.get("k", {})
-
     return {
         "tipo": "kline_1m",
         "event_time": payload.get("E"),
@@ -112,14 +114,12 @@ def on_message(ws, message):
         if event_type == "24hrMiniTicker":
             mensaje = normalizar_miniticker(payload)
             topic = TOPIC_TICKER
-
             precio_actual.labels(par=par).set(mensaje["precio_actual"])
             mensajes_binance.labels(tipo="miniTicker", par=par).inc()
 
         elif event_type == "kline":
             mensaje = normalizar_kline(payload)
             topic = TOPIC_KLINE
-
             mensajes_binance.labels(tipo="kline_1m", par=par).inc()
 
         else:
@@ -153,7 +153,6 @@ def iniciar_websocket():
         on_error=on_error,
         on_close=on_close,
     )
-
     ws.run_forever(ping_interval=30, ping_timeout=10)
 
 
@@ -163,6 +162,8 @@ if __name__ == "__main__":
 
     start_http_server(8000)
     print("Servidor de métricas Prometheus iniciado en puerto 8000")
+
+    producer = crear_producer(KAFKA_BOOTSTRAP_SERVERS)
 
     while True:
         try:
