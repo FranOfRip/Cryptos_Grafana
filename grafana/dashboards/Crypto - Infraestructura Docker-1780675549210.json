@@ -15,7 +15,6 @@
       }
     ]
   },
-  "description": "Cryptomonedas graficos",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -24,14 +23,50 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "afo1jk0lj0ef4e"
+        "uid": "prometheus-uid"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -40,12 +75,16 @@
                 "value": 0
               },
               {
-                "color": "dark-orange",
-                "value": 80
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
               }
             ]
           },
-          "unit": "currencyEUR"
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -57,113 +96,33 @@
       },
       "id": 1,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
         },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
       },
       "pluginVersion": "12.4.1",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "efkns9qv9d1xce"
-          },
-          "editorMode": "code",
-          "expr": "crypto_precio_actual{par=\"BTCUSDT\"}",
-          "legendFormat": "__auto",
-          "range": true,
+          "expr": "100 - (avg by(instance)(rate(node_cpu_seconds_total{mode=\"idle\"}[2m])) * 100)",
+          "legendFormat": "CPU %",
           "refId": "A"
         }
       ],
-      "title": "BTC Precio",
-      "type": "stat"
+      "title": "CPU del host (%)",
+      "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "afo1jk0lj0ef4e"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "dark-blue",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "currencyEUR"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.4.1",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "afo1jk0lj0ef4e"
-          },
-          "editorMode": "code",
-          "expr": "crypto_precio_actual{par=\"ETHUSDT\"}",
-          "instant": false,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "ETH Precio",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "afo1jk0lj0ef4e"
+        "uid": "prometheus-uid"
       },
       "fieldConfig": {
         "defaults": {
@@ -217,13 +176,107 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "bytes"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
+      "targets": [
+        {
+          "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+          "legendFormat": "RAM usada",
+          "refId": "A"
+        }
+      ],
+      "title": "Memoria usada del host",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-uid"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
         "x": 0,
         "y": 8
       },
@@ -244,20 +297,18 @@
       "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "crypto_precio_actual",
-          "legendFormat": "{{par}}",
-          "range": true,
+          "expr": "container_memory_usage_bytes{name!=\"\"}",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ],
-      "title": "Evolución precio BTC / ETH",
+      "title": "Memoria por contenedor Docker",
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "afo1jk0lj0ef4e"
+        "uid": "prometheus-uid"
       },
       "fieldConfig": {
         "defaults": {
@@ -311,15 +362,16 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "percent"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 17
       },
       "id": 4,
       "options": {
@@ -338,20 +390,18 @@
       "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "rate(binance_mensajes_total[1m])",
-          "legendFormat": "{{par}}",
-          "range": true,
+          "expr": "rate(container_cpu_usage_seconds_total{name!=\"\"}[2m]) * 100",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ],
-      "title": "Mensajes desde Binance",
+      "title": "CPU por contenedor Docker (%)",
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "afo1jk0lj0ef4e"
+        "uid": "prometheus-uid"
       },
       "fieldConfig": {
         "defaults": {
@@ -405,15 +455,16 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "Bps"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 6,
-        "y": 16
+        "x": 0,
+        "y": 26
       },
       "id": 5,
       "options": {
@@ -432,20 +483,22 @@
       "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "rate(kafka_mensajes_publicados_total[1m])",
-          "legendFormat": "{{par}}",
-          "range": true,
+          "expr": "rate(container_network_receive_bytes_total{name!=\"\"}[2m])",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ],
-      "title": "Mensajes publicados en Kafka",
+      "title": "Red recibida por contenedor",
       "type": "timeseries"
     }
   ],
   "preload": false,
+  "refresh": "15s",
   "schemaVersion": 42,
-  "tags": [],
+  "tags": [
+    "infra",
+    "docker"
+  ],
   "templating": {
     "list": []
   },
@@ -455,8 +508,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Cryptos",
-  "uid": "addtz8p",
-  "version": 5,
+  "title": "Crypto - Infraestructura Docker",
+  "uid": "crypto-infra",
+  "version": 1,
   "weekStart": ""
 }

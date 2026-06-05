@@ -1,0 +1,97 @@
+{
+  "title": "Crypto - Métricas de Negocio",
+  "uid": "crypto-negocio",
+  "tags": ["crypto", "negocio"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Precio BTC/USDT en vivo",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus-uid"},
+      "targets": [{"expr": "crypto_precio_actual{par=\"BTCUSDT\"}", "legendFormat": "BTC/USDT", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": 0}]}}}
+    },
+    {
+      "id": 2,
+      "title": "Precio ETH/USDT en vivo",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus-uid"},
+      "targets": [{"expr": "crypto_precio_actual{par=\"ETHUSDT\"}", "legendFormat": "ETH/USDT", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": 0}]}}}
+    },
+    {
+      "id": 3,
+      "title": "SMA 5 min - BTC",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 6, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus-uid"},
+      "targets": [{"expr": "spark_sma_5min{par=\"BTCUSDT\"}", "legendFormat": "SMA BTC", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+    },
+    {
+      "id": 4,
+      "title": "Variación % en ventana 5 min",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 6, "x": 18, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus-uid"},
+      "targets": [
+        {"expr": "spark_variacion_pct{par=\"BTCUSDT\"}", "legendFormat": "BTC", "refId": "A"},
+        {"expr": "spark_variacion_pct{par=\"ETHUSDT\"}", "legendFormat": "ETH", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": 0}, {"color": "orange", "value": 1}, {"color": "red", "value": 2}]}}}
+    },
+    {
+      "id": 5,
+      "title": "Precio BTC/USDT histórico",
+      "type": "timeseries",
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus-uid"},
+      "targets": [{"expr": "crypto_precio_actual{par=\"BTCUSDT\"}", "legendFormat": "BTC/USDT", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD", "color": {"mode": "palette-classic"}}}
+    },
+    {
+      "id": 6,
+      "title": "Precio ETH/USDT histórico",
+      "type": "timeseries",
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus-uid"},
+      "targets": [{"expr": "crypto_precio_actual{par=\"ETHUSDT\"}", "legendFormat": "ETH/USDT", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+    },
+    {
+      "id": 7,
+      "title": "Mensajes recibidos desde Binance (rate 2m)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 15},
+      "datasource": {"type": "prometheus", "uid": "prometheus-uid"},
+      "targets": [{"expr": "rate(binance_mensajes_total[2m])", "legendFormat": "{{tipo}} - {{par}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "reqps"}}
+    },
+    {
+      "id": 8,
+      "title": "Pump & Dump detectados (acumulado)",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 15},
+      "datasource": {"type": "prometheus", "uid": "prometheus-uid"},
+      "targets": [{"expr": "spark_pump_dump_detectados_total", "legendFormat": "{{par}}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": 0}, {"color": "red", "value": 1}]}}}
+    },
+    {
+      "id": 9,
+      "title": "Volumen medio en ventana 5 min",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 15},
+      "datasource": {"type": "prometheus", "uid": "prometheus-uid"},
+      "targets": [
+        {"expr": "spark_volumen_medio{par=\"BTCUSDT\"}", "legendFormat": "BTC", "refId": "A"},
+        {"expr": "spark_volumen_medio{par=\"ETHUSDT\"}", "legendFormat": "ETH", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    }
+  ]
+}

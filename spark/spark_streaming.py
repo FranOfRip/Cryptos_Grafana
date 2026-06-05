@@ -1,3 +1,7 @@
+import os
+import time
+import threading
+ 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     col,
@@ -9,7 +13,8 @@ from pyspark.sql.functions import (
     avg,
     max as spark_max,
     min as spark_min,
-    expr
+    expr,
+    count
 )
 from pyspark.sql.types import (
     StructType,
@@ -17,19 +22,40 @@ from pyspark.sql.types import (
     DoubleType,
     LongType
 )
-
-
+from prometheus_client import Gauge, Counter, start_http_server
+ 
+# ── Métricas Prometheus ───────────────────────────────────────────────────────
+sma_gauge = Gauge("spark_sma_5min", "Media móvil 5min del precio", ["par"])
+variacion_gauge = Gauge("spark_variacion_pct", "Variación % en ventana 5min", ["par"])
+pump_dump_counter = Counter("spark_pump_dump_detectados_total", "Pump/Dump detectados", ["par"])
+mensajes_procesados = Counter("spark_mensajes_procesados_total", "Mensajes procesados por Spark")
+volumen_gauge = Gauge("spark_volumen_medio", "Volumen medio en ventana 5min", ["par"])
+ 
+# ── Servidor Prometheus en hilo separado ──────────────────────────────────────
+# Se lanza en un hilo daemon para que no bloquee el arranque de Spark
+# y esté disponible desde el primer momento para que Prometheus pueda scrapearlo
+def iniciar_prometheus():
+    try:
+        start_http_server(8001)
+        print("[Prometheus] Servidor de métricas iniciado en puerto 8001")
+    except Exception as e:
+        print(f"[Prometheus] Error al iniciar servidor: {e}")
+ 
+t = threading.Thread(target=iniciar_prometheus, daemon=True)
+t.start()
+time.sleep(2)  # Pequeña espera para asegurar que el puerto está abierto
+ 
+# ── SparkSession ──────────────────────────────────────────────────────────────
 spark = SparkSession.builder \
     .appName("CryptoSparkStreaming") \
     .getOrCreate()
-
+ 
 spark.sparkContext.setLogLevel("WARN")
-
-
-KAFKA_BOOTSTRAP_SERVERS = "kafka:29092"
+ 
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
 TOPIC_TICKER = "crypto_ticker"
-
-
+ 
+# ── Schema ────────────────────────────────────────────────────────────────────
 schema_ticker = StructType() \
     .add("tipo", StringType()) \
     .add("event_time", LongType()) \
@@ -41,24 +67,21 @@ schema_ticker = StructType() \
     .add("volumen_base", DoubleType()) \
     .add("volumen_quote", DoubleType()) \
     .add("ingestion_ts", LongType())
-
-
+ 
+# ── Lectura desde Kafka ───────────────────────────────────────────────────────
 raw_df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
     .option("subscribe", TOPIC_TICKER) \
     .option("startingOffsets", "latest") \
     .load()
-
-
+ 
 json_df = raw_df.selectExpr("CAST(value AS STRING) AS json_value")
-
-
+ 
 parsed_df = json_df \
     .select(from_json(col("json_value"), schema_ticker).alias("data")) \
     .select("data.*")
-
-
+ 
 clean_df = parsed_df \
     .withColumn(
         "event_timestamp",
@@ -68,8 +91,8 @@ clean_df = parsed_df \
         "fecha",
         date_format(col("event_timestamp"), "yyyy-MM-dd")
     )
-
-
+ 
+# ── Indicadores con ventana deslizante 5min / slide 30s ──────────────────────
 indicadores_df = clean_df \
     .withWatermark("event_timestamp", "2 minutes") \
     .groupBy(
@@ -80,7 +103,8 @@ indicadores_df = clean_df \
         avg("precio_actual").alias("sma_5min"),
         spark_max("precio_actual").alias("precio_maximo_ventana"),
         spark_min("precio_actual").alias("precio_minimo_ventana"),
-        avg("volumen_base").alias("volumen_medio")
+        avg("volumen_base").alias("volumen_medio"),
+        count("*").alias("num_ticks")
     ) \
     .withColumn(
         "variacion_pct",
@@ -90,8 +114,21 @@ indicadores_df = clean_df \
         "pump_dump_detectado",
         expr("CASE WHEN variacion_pct > 2 THEN 1 ELSE 0 END")
     )
-
-
+ 
+# ── foreachBatch → actualiza Prometheus con cada micro-batch ─────────────────
+def actualizar_prometheus(batch_df, batch_id):
+    rows = batch_df.collect()
+    for row in rows:
+        par = row["par"]
+        sma_gauge.labels(par=par).set(row["sma_5min"] or 0)
+        variacion_gauge.labels(par=par).set(row["variacion_pct"] or 0)
+        volumen_gauge.labels(par=par).set(row["volumen_medio"] or 0)
+        if row["pump_dump_detectado"] == 1:
+            pump_dump_counter.labels(par=par).inc()
+        mensajes_procesados.inc(row["num_ticks"] or 0)
+ 
+# ── Escrituras ────────────────────────────────────────────────────────────────
+# 1. HDFS en Parquet particionado por par y fecha
 query_hdfs = clean_df.writeStream \
     .format("parquet") \
     .option("path", "hdfs://namenode:9000/data/crypto") \
@@ -99,13 +136,18 @@ query_hdfs = clean_df.writeStream \
     .partitionBy("par", "fecha") \
     .outputMode("append") \
     .start()
-
-
+ 
+# 2. Indicadores → Prometheus vía foreachBatch
+query_prometheus = indicadores_df.writeStream \
+    .foreachBatch(actualizar_prometheus) \
+    .outputMode("update") \
+    .start()
+ 
+# 3. Consola para debug
 query_console = indicadores_df.writeStream \
     .format("console") \
     .outputMode("update") \
     .option("truncate", "false") \
     .start()
-
-
+ 
 spark.streams.awaitAnyTermination()
