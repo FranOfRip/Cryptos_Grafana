@@ -24,16 +24,12 @@ from pyspark.sql.types import (
 )
 from prometheus_client import Gauge, Counter, start_http_server
  
-# ── Métricas Prometheus ───────────────────────────────────────────────────────
 sma_gauge = Gauge("spark_sma_5min", "Media móvil 5min del precio", ["par"])
 variacion_gauge = Gauge("spark_variacion_pct", "Variación % en ventana 5min", ["par"])
 pump_dump_counter = Counter("spark_pump_dump_detectados_total", "Pump/Dump detectados", ["par"])
 mensajes_procesados = Counter("spark_mensajes_procesados_total", "Mensajes procesados por Spark")
 volumen_gauge = Gauge("spark_volumen_medio", "Volumen medio en ventana 5min", ["par"])
  
-# ── Servidor Prometheus en hilo separado ──────────────────────────────────────
-# Se lanza en un hilo daemon para que no bloquee el arranque de Spark
-# y esté disponible desde el primer momento para que Prometheus pueda scrapearlo
 def iniciar_prometheus():
     try:
         start_http_server(8001)
@@ -43,9 +39,8 @@ def iniciar_prometheus():
  
 t = threading.Thread(target=iniciar_prometheus, daemon=True)
 t.start()
-time.sleep(2)  # Pequeña espera para asegurar que el puerto está abierto
+time.sleep(2)  
  
-# ── SparkSession ──────────────────────────────────────────────────────────────
 spark = SparkSession.builder \
     .appName("CryptoSparkStreaming") \
     .getOrCreate()
@@ -55,7 +50,6 @@ spark.sparkContext.setLogLevel("WARN")
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
 TOPIC_TICKER = "crypto_ticker"
  
-# ── Schema ────────────────────────────────────────────────────────────────────
 schema_ticker = StructType() \
     .add("tipo", StringType()) \
     .add("event_time", LongType()) \
@@ -68,7 +62,6 @@ schema_ticker = StructType() \
     .add("volumen_quote", DoubleType()) \
     .add("ingestion_ts", LongType())
  
-# ── Lectura desde Kafka ───────────────────────────────────────────────────────
 raw_df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
@@ -92,7 +85,6 @@ clean_df = parsed_df \
         date_format(col("event_timestamp"), "yyyy-MM-dd")
     )
  
-# ── Indicadores con ventana deslizante 5min / slide 30s ──────────────────────
 indicadores_df = clean_df \
     .withWatermark("event_timestamp", "2 minutes") \
     .groupBy(
@@ -114,8 +106,7 @@ indicadores_df = clean_df \
         "pump_dump_detectado",
         expr("CASE WHEN variacion_pct > 2 THEN 1 ELSE 0 END")
     )
- 
-# ── foreachBatch → actualiza Prometheus con cada micro-batch ─────────────────
+
 def actualizar_prometheus(batch_df, batch_id):
     rows = batch_df.collect()
     for row in rows:
@@ -127,8 +118,6 @@ def actualizar_prometheus(batch_df, batch_id):
             pump_dump_counter.labels(par=par).inc()
         mensajes_procesados.inc(row["num_ticks"] or 0)
  
-# ── Escrituras ────────────────────────────────────────────────────────────────
-# 1. HDFS en Parquet particionado por par y fecha
 query_hdfs = clean_df.writeStream \
     .format("parquet") \
     .option("path", "hdfs://namenode:9000/data/crypto") \
@@ -137,13 +126,11 @@ query_hdfs = clean_df.writeStream \
     .outputMode("append") \
     .start()
  
-# 2. Indicadores → Prometheus vía foreachBatch
 query_prometheus = indicadores_df.writeStream \
     .foreachBatch(actualizar_prometheus) \
     .outputMode("update") \
     .start()
  
-# 3. Consola para debug
 query_console = indicadores_df.writeStream \
     .format("console") \
     .outputMode("update") \

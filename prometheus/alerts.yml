@@ -3,7 +3,6 @@ groups:
     rules:
 
       # Alerta 1: Lag del producer — si deja de recibir mensajes de Binance
-      # Si en 2 minutos no llega ningún mensaje, algo falla en el WebSocket
       - alert: ProducerSinMensajes
         expr: rate(binance_mensajes_total[2m]) == 0
         for: 2m
@@ -14,7 +13,6 @@ groups:
           description: "No se han recibido mensajes de Binance en los últimos 2 minutos. Posible caída del WebSocket."
 
       # Alerta 2: Pump & Dump detectado
-      # Un solo evento ya es relevante para actuar, sin esperar acumulación
       - alert: PumpDumpDetectado
         expr: increase(spark_pump_dump_detectados_total[5m]) > 0
         for: 0m
@@ -25,7 +23,6 @@ groups:
           description: "Se ha detectado una variación >2% en una ventana de 5 minutos para el par {{ $labels.par }}."
 
       # Alerta 3: Contenedor con memoria alta
-      # Si un contenedor supera el 85% de su límite de memoria, riesgo de OOM
       - alert: ContenedorMemoriaAlta
         expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.85
         for: 3m
