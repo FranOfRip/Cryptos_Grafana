@@ -90,6 +90,7 @@ services:
     environment:
       - SERVICE_NAME=metastore
       - DB_DRIVER=derby
+      - SKIP_SCHEMA_INIT=true          # <-- añade esta línea
       - HIVE_METASTORE_WAREHOUSE_DIR=hdfs://namenode:9000/user/hive/warehouse
       - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000

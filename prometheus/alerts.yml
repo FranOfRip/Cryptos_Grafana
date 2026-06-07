@@ -24,10 +24,10 @@ groups:
 
       # Alerta 3: Contenedor con memoria alta
       - alert: ContenedorMemoriaAlta
-        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.85
+        expr: container_memory_usage_bytes > 500000000
         for: 3m
         labels:
           severity: warning
         annotations:
           summary: "Memoria alta en contenedor {{ $labels.name }}"
-          description: "El contenedor {{ $labels.name }} lleva 3 minutos por encima del 85% de su límite de memoria."
+          description: "El contenedor {{ $labels.name }} lleva 3 minutos usando más de 500 MB de memoria."
